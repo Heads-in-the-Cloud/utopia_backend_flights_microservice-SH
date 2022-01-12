@@ -567,6 +567,18 @@ def delete_flight(flight_id: int):
 @app.post("/api/v2/routes/", response_model=s.RouteFull)
 def create_route(origin: s.Airport, destination: s.Airport):
     with Session(engine) as db:
+        db_route = db                                       \
+            .query(m.Route)                                 \
+            .filter(m.Route.origin_id == origin and
+                    m.Route.destination_id == destination)  \
+            .first()
+
+        if db_route:
+            raise HTTPException(
+                status_code=400,
+                detail=f"A route between those airports already exists. [id: {db_route.id}]"
+            )
+        
         distance = Haversine(
             (origin.longitude, origin.latitude),
             (destination.longitude, destination.latitude)
