@@ -3,20 +3,17 @@
 # ########################################              Main             ###############################################
 # ########################################                               ###############################################
 # ######################################################################################################################
-
+import os
 from typing import List
 
 from fastapi import FastAPI, HTTPException
-from sqlalchemy.orm import Session
+from sqlmodel import Session, SQLModel, create_engine
 
+from .sqlmodels import *
 from .haversine import Haversine
-from .database import engine
-from . import (
-    models as m,
-    schemas as s
-)
 
-m.Base.metadata.create_all(bind=engine)
+SQLALCHEMY_DATABASE_URL = os.getenv('DB_ACCESS_URI') or "mysql+pymysql://root:root@127.0.0.1:6603/utopia"
+engine = create_engine(SQLALCHEMY_DATABASE_URL)
 
 app = FastAPI()
 
@@ -26,6 +23,21 @@ app = FastAPI()
 # ########################################          API Routes           ###############################################
 # ########################################                               ###############################################
 # ######################################################################################################################
+
+
+# ------------------------------------------------
+#                 Startup DB Creation
+# ------------------------------------------------
+
+
+@app.on_event("startup")
+def on_startup():
+    SQLModel.metadata.create_all(engine)
+
+
+# ------------------------------------------------
+#                   Health Check
+# ------------------------------------------------
 
 
 @app.get("/health")
@@ -40,10 +52,10 @@ def health_check():
 # --------------------  Create  ------------------
 
 
-@app.post("/api/v2/airplanes/", response_model=s.AirplaneFull)
-def create_airplane(airplane: s.Airplane):
+@app.post("/api/v2/airplanes/", response_model=AirplaneRead)
+def create_airplane(airplane: AirplaneCreate):
     with Session(engine) as db:
-        db_airplane = m.Airplane(type_id=airplane.type_id)
+        db_airplane = Airplane.from_orm(airplane)
 
         db.add(db_airplane)
         db.commit()
@@ -55,12 +67,12 @@ def create_airplane(airplane: s.Airplane):
 # --------------------   Read   ------------------
 
 
-@app.get("/api/v2/airplanes/{airplane_id}", response_model=s.AirplaneFull)
+@app.get("/api/v2/airplanes/{airplane_id}", response_model=AirplaneRead)
 def get_airplane(airplane_id: int):
     with Session(engine) as db:
         db_airplane = db                                \
-            .query(m.Airplane)                          \
-            .filter(m.Airplane.id == airplane_id)       \
+            .query(Airplane)                            \
+            .filter(Airplane.id == airplane_id)         \
             .first()
 
         if not db_airplane:
@@ -72,11 +84,11 @@ def get_airplane(airplane_id: int):
         return db_airplane
 
 
-@app.get("/api/v2/airplanes/", response_model=List[s.AirplaneFull])
+@app.get("/api/v2/airplanes/", response_model=List[AirplaneRead])
 def get_airplanes():
     with Session(engine) as db:
         airplanes = db              \
-            .query(m.Airplane)      \
+            .query(Airplane)        \
             .all()
 
         if not airplanes:
@@ -88,12 +100,12 @@ def get_airplanes():
         return airplanes
 
 
-@app.get("/api/v2/airplanes/type={type_id}", response_model=List[s.AirplaneFull])
+@app.get("/api/v2/airplanes/type={type_id}", response_model=List[AirplaneRead])
 def get_airplanes_with_type(type_id: int):
     with Session(engine) as db:
-        type_airplanes = db                             \
-            .query(m.Airplane)                          \
-            .filter(m.Airplane.type_id == type_id)      \
+        type_airplanes = db                           \
+            .query(Airplane)                          \
+            .filter(Airplane.type_id == type_id)      \
             .all()
 
         if not type_airplanes:
@@ -108,12 +120,12 @@ def get_airplanes_with_type(type_id: int):
 # --------------------  Update  ------------------
 
 
-@app.patch("/api/v2/airplanes/{airplane_id}", response_model=s.AirplaneFull)
-def update_plane(airplane_id: int, airplane: s.AirplaneUpdate):
+@app.patch("/api/v2/airplanes/{airplane_id}", response_model=AirplaneRead)
+def update_plane(airplane_id: int, airplane: AirplaneUpdate):
     with Session(engine) as db:
-        db_airplane = db                                \
-            .query(m.Airplane)                          \
-            .filter(m.Airplane.id == airplane_id)       \
+        db_airplane = db                              \
+            .query(Airplane)                          \
+            .filter(Airplane.id == airplane_id)       \
             .first()
 
         if not db_airplane:
@@ -140,8 +152,8 @@ def update_plane(airplane_id: int, airplane: s.AirplaneUpdate):
 def delete_airplane(airplane_id: int):
     with Session(engine) as db:
         db_airplane = db                                \
-            .query(m.Airplane)                          \
-            .filter(m.Airplane.id == airplane_id)       \
+            .query(Airplane)                          \
+            .filter(Airplane.id == airplane_id)       \
             .first()
 
         if not db_airplane:
@@ -163,12 +175,10 @@ def delete_airplane(airplane_id: int):
 # --------------------  Create  ------------------
 
 
-@app.post("/api/v2/airplane_types/", response_model=s.AirplaneTypeFull)
-def create_airplane_type(plane_type: s.AirplaneType):
+@app.post("/api/v2/airplane_types/", response_model=AirplaneTypeRead)
+def create_airplane_type(plane_type: AirplaneTypeCreate):
     with Session(engine) as db:
-        new_type = m.AirplaneType(
-            max_capacity=plane_type.max_capacity
-        )
+        new_type = AirplaneType.from_orm(plane_type)
 
         db.add(new_type)
         db.commit()
@@ -180,12 +190,12 @@ def create_airplane_type(plane_type: s.AirplaneType):
 # --------------------   Read   ------------------
 
 
-@app.get("/api/v2/airplane_types/{type_id}", response_model=s.AirplaneTypeFull)
+@app.get("/api/v2/airplane_types/{type_id}", response_model=AirplaneTypeRead)
 def get_airplane_type(type_id: int):
     with Session(engine) as db:
         db_type = db                                    \
-            .query(m.AirplaneType)                      \
-            .filter(m.AirplaneType.id == type_id)       \
+            .query(AirplaneType)                      \
+            .filter(AirplaneType.id == type_id)       \
             .first()
 
         if not db_type:
@@ -197,12 +207,12 @@ def get_airplane_type(type_id: int):
         return db_type
 
 
-@app.get("/api/v2/airplane_types/capacity={desired_capacity}", response_model=s.AirplaneTypeFull)
+@app.get("/api/v2/airplane_types/capacity={desired_capacity}", response_model=AirplaneTypeRead)
 def get_airplane_type_capacity_gt(desired_capacity: int):
     with Session(engine) as db:
         db_type = db                                                    \
-            .query(m.AirplaneType)                                      \
-            .filter(m.AirplaneType.max_capacity >= desired_capacity)    \
+            .query(AirplaneType)                                      \
+            .filter(AirplaneType.max_capacity >= desired_capacity)    \
             .first()
 
         if not db_type:
@@ -214,11 +224,11 @@ def get_airplane_type_capacity_gt(desired_capacity: int):
         return db_type
 
 
-@app.get("/api/v2/airplane_types/", response_model=List[s.AirplaneTypeFull])
+@app.get("/api/v2/airplane_types/", response_model=List[AirplaneTypeRead])
 def get_airplane_types():
     with Session(engine) as db:
         types = db                      \
-            .query(m.AirplaneType)      \
+            .query(AirplaneType)      \
             .all()
 
         if not types:
@@ -231,12 +241,12 @@ def get_airplane_types():
 # --------------------  Update  ------------------
 
 
-@app.patch("/api/v2/airplane_types/{type_id}", response_model=s.AirplaneTypeFull)
-def update_airplane_type(type_id: int, update_type: s.AirplaneTypeUpdate):
+@app.patch("/api/v2/airplane_types/{type_id}", response_model=AirplaneTypeRead)
+def update_airplane_type(type_id: int, update_type: AirplaneTypeUpdate):
     with Session(engine) as db:
         db_type = db                                    \
-            .query(m.AirplaneType)                      \
-            .filter(m.AirplaneType.id == type_id)       \
+            .query(AirplaneType)                      \
+            .filter(AirplaneType.id == type_id)       \
             .first()
 
         if not db_type:
@@ -263,8 +273,8 @@ def update_airplane_type(type_id: int, update_type: s.AirplaneTypeUpdate):
 def delete_airplane_type(type_id: int):
     with Session(engine) as db:
         db_type = db                                    \
-            .query(m.AirplaneType)                      \
-            .filter(m.AirplaneType.id == type_id)       \
+            .query(AirplaneType)                      \
+            .filter(AirplaneType.id == type_id)       \
             .first()
 
         if not db_type:
@@ -290,12 +300,12 @@ def delete_airplane_type(type_id: int):
 # --------------------  Create  ------------------
 
 
-@app.post("/api/v2/airports/", response_model=s.Airport)
-def create_airport(airport: s.Airport):
+@app.post("/api/v2/airports/", response_model=AirportRead)
+def create_airport(airport: AirportRead):
     with Session(engine) as db:
-        db_airport = db                                     \
-            .query(m.Airport)                               \
-            .filter(m.Airport.iata_id == airport.iata_id)   \
+        db_airport = db                                   \
+            .query(Airport)                               \
+            .filter(Airport.iata_id == airport.iata_id)   \
             .first()
 
         if db_airport:
@@ -304,14 +314,7 @@ def create_airport(airport: s.Airport):
                 detail="Airport with that iata_id already exists"
             )
 
-        new_airport = m.Airport(
-            iata_id=airport.iata_id,
-            city=airport.city,
-            name=airport.name,
-            longitude=airport.longitude,
-            latitude=airport.latitude,
-            elevation=airport.elevation
-        )
+        new_airport = Airport.from_orm(airport)
 
         db.add(new_airport)
         db.commit()
@@ -323,12 +326,12 @@ def create_airport(airport: s.Airport):
 # --------------------   Read   ------------------
 
 
-@app.get("/api/v2/airports/{iata_id}", response_model=s.Airport)
+@app.get("/api/v2/airports/{iata_id}", response_model=AirportRead)
 def get_airport(iata_id: str):
     with Session(engine) as db:
         db_airport = db                                 \
-            .query(m.Airport)                           \
-            .filter(m.Airport.iata_id == iata_id)       \
+            .query(Airport)                           \
+            .filter(Airport.iata_id == iata_id)       \
             .first()
 
         if not db_airport:
@@ -340,12 +343,12 @@ def get_airport(iata_id: str):
         return db_airport
 
 
-@app.get("/api/v2/airports/city={city}", response_model=s.Airport)
+@app.get("/api/v2/airports/city={city}", response_model=AirportRead)
 def get_airports_by_city(city: str):
     with Session(engine) as db:
         city_airports = db                      \
-            .query(m.Airport)                   \
-            .filter(m.Airport.city == city)     \
+            .query(Airport)                   \
+            .filter(Airport.city == city)     \
             .all()
 
         if not city_airports:
@@ -357,11 +360,11 @@ def get_airports_by_city(city: str):
         return city_airports
 
 
-@app.get("/api/v2/airports/", response_model=List[s.Airport])
+@app.get("/api/v2/airports/", response_model=List[AirportRead])
 def get_airports():
     with Session(engine) as db:
         airports = db               \
-            .query(m.Airport)       \
+            .query(Airport)       \
             .all()
 
         if not airports:
@@ -376,12 +379,12 @@ def get_airports():
 # --------------------  Update  ------------------
 
 
-@app.patch("/api/v2/airports/{iata_id}", response_model=s.Airport)
-def update_airport(iata_id: str, airport: s.AirportUpdate):
+@app.patch("/api/v2/airports/{iata_id}", response_model=AirportRead)
+def update_airport(iata_id: str, airport: AirportUpdate):
     with Session(engine) as db:
         db_airport = db                                 \
-            .query(m.Airport)                           \
-            .filter(m.Airport.iata_id == iata_id)       \
+            .query(Airport)                           \
+            .filter(Airport.iata_id == iata_id)       \
             .first()
 
         if not db_airport:
@@ -408,8 +411,8 @@ def update_airport(iata_id: str, airport: s.AirportUpdate):
 def delete_airport(iata_id: str):
     with Session(engine) as db:
         db_airport = db                                 \
-            .query(m.Airport)                           \
-            .filter(m.Airport.iata_id == iata_id)       \
+            .query(Airport)                           \
+            .filter(Airport.iata_id == iata_id)       \
             .first()
 
         if not db_airport:
@@ -419,9 +422,9 @@ def delete_airport(iata_id: str):
             )
 
         affected_routes = db                                    \
-            .query(m.Route)                                     \
-            .filter(m.Route.origin_id == iata_id or
-                    m.Route.destination_id == iata_id)          \
+            .query(Route)                                     \
+            .filter(Route.origin_id == iata_id or
+                    Route.destination_id == iata_id)          \
             .all()
 
         for route in affected_routes:
@@ -440,12 +443,12 @@ def delete_airport(iata_id: str):
 # --------------------  Create  ------------------
 
 
-@app.post("/api/v2/flights/", response_model=s.FlightFull)
-def create_flight(flight: s.Flight):
+@app.post("/api/v2/flights/", response_model=FlightRead)
+def create_flight(flight: FlightCreate):
     with Session(engine) as db:
-        db_flight = db                          \
-            .query(m.Flight)                    \
-            .fliter(m.Flight == flight)         \
+        db_flight = db                        \
+            .query(Flight)                    \
+            .fliter(Flight == flight)         \
             .first()
 
         if db_flight:
@@ -454,13 +457,7 @@ def create_flight(flight: s.Flight):
                 detail="Flight already exists"
             )
 
-        new_flight = m.Flight(
-            route_id=flight.route_id,
-            airplane_id=flight.airplane_id,
-            departure_time=flight.departure_time,
-            reserved_seats=flight.reserved_seats,
-            seat_price=flight.seat_price
-        )
+        new_flight = Flight.from_orm(flight)
 
         db.add(new_flight)
         db.commit()
@@ -472,12 +469,12 @@ def create_flight(flight: s.Flight):
 # --------------------   Read   ------------------
 
 
-@app.get("/api/v2/flights/{flight_id}", response_model=s.FlightFull)
+@app.get("/api/v2/flights/{flight_id}", response_model=FlightRead)
 def get_flight(flight_id: int):
     with Session(engine) as db:
         db_flight = db                              \
-            .query(m.Flight)                        \
-            .fliter(m.Flight.id == flight_id)       \
+            .query(Flight)                        \
+            .fliter(Flight.id == flight_id)       \
             .first()
 
         if not db_flight:
@@ -489,12 +486,12 @@ def get_flight(flight_id: int):
         return db_flight
 
 
-@app.get("/api/v2/flights/", response_model=List[s.FlightFull])
+@app.get("/api/v2/flights/", response_model=List[FlightRead])
 def get_flights_by_route(route_id: int):
     with Session(engine) as db:
         flights = db                                  \
-            .query(m.Flight)                            \
-            .filter(m.Flight.route_id == route_id)      \
+            .query(Flight)                            \
+            .filter(Flight.route_id == route_id)      \
             .all()
 
         if not flights:
@@ -509,12 +506,12 @@ def get_flights_by_route(route_id: int):
 # --------------------  Update  ------------------
 
 
-@app.patch("/api/v2/flights/{flight_id}", response_model=s.FlightFull)
-def update_flight(flight_id: int, flight: s.FlightUpdate):
+@app.patch("/api/v2/flights/{flight_id}", response_model=FlightRead)
+def update_flight(flight_id: int, flight: FlightUpdate):
     with Session(engine) as db:
         db_flight = db                              \
-            .query(m.Flight)                        \
-            .fliter(m.Flight.id == flight_id)       \
+            .query(Flight)                        \
+            .fliter(Flight.id == flight_id)       \
             .first()
 
         if not db_flight:
@@ -541,8 +538,8 @@ def update_flight(flight_id: int, flight: s.FlightUpdate):
 def delete_flight(flight_id: int):
     with Session(engine) as db:
         db_flight = db                              \
-            .query(m.Flight)                        \
-            .fliter(m.Flight.id == flight_id)       \
+            .query(Flight)                        \
+            .fliter(Flight.id == flight_id)       \
             .first()
 
         if not db_flight:
@@ -564,13 +561,13 @@ def delete_flight(flight_id: int):
 # --------------------  Create  ------------------
 
 
-@app.post("/api/v2/routes/", response_model=s.RouteFull)
-def create_route(origin: s.Airport, destination: s.Airport):
+@app.post("/api/v2/routes/", response_model=RouteRead)
+def create_route(origin: AirportRead, destination: AirportRead):
     with Session(engine) as db:
-        db_route = db                                       \
-            .query(m.Route)                                 \
-            .filter(m.Route.origin_id == origin and
-                    m.Route.destination_id == destination)  \
+        db_route = db                                     \
+            .query(Route)                                 \
+            .filter(Route.origin_id == origin and
+                    Route.destination_id == destination)  \
             .first()
 
         if db_route:
@@ -578,7 +575,7 @@ def create_route(origin: s.Airport, destination: s.Airport):
                 status_code=400,
                 detail=f"A route between those airports already exists. [id: {db_route.id}]"
             )
-        
+
         distance = Haversine(
             (origin.longitude, origin.latitude),
             (destination.longitude, destination.latitude)
@@ -586,7 +583,7 @@ def create_route(origin: s.Airport, destination: s.Airport):
 
         duration = distance / 500  # Average flight speed is roughly 500 mph
 
-        new_route = m.Route(
+        new_route = Route(
             origin_id=origin.iata_id,
             destination_id=destination.iata_id,
             duration=duration
@@ -602,12 +599,12 @@ def create_route(origin: s.Airport, destination: s.Airport):
 # --------------------   Read   ------------------
 
 
-@app.get("/api/v2/routes/{route_id}", response_model=s.RouteFull)
+@app.get("/api/v2/routes/{route_id}", response_model=RouteRead)
 def get_route(route_id: int):
     with Session(engine) as db:
-        db_route = db                               \
-            .query(m.Route)                         \
-            .filter(m.Route.id == route_id)         \
+        db_route = db                             \
+            .query(Route)                         \
+            .filter(Route.id == route_id)         \
             .first()
 
         if not db_route:
@@ -619,11 +616,11 @@ def get_route(route_id: int):
         return db_route
 
 
-@app.get("/api/v2/routes/", response_model=List[s.RouteFull])
+@app.get("/api/v2/routes/", response_model=List[RouteRead])
 def get_routes():
     with Session(engine) as db:
-        routes = db                 \
-            .query(m.Route)         \
+        routes = db               \
+            .query(Route)         \
             .all()
 
         if not routes:
@@ -635,12 +632,12 @@ def get_routes():
         return routes
 
 
-@app.get("/api/v2/routes/origin={iata_id}", response_model=List[s.RouteFull])
+@app.get("/api/v2/routes/origin={iata_id}", response_model=List[RouteRead])
 def get_routes_by_origin(iata_id: str):
     with Session(engine) as db:
-        routes = db                                     \
-            .query(m.Route)                             \
-            .filter(m.Route.origin_id == iata_id)       \
+        routes = db                                   \
+            .query(Route)                             \
+            .filter(Route.origin_id == iata_id)       \
             .all()
 
         if not routes:
@@ -652,12 +649,12 @@ def get_routes_by_origin(iata_id: str):
         return routes
 
 
-@app.get("/api/v2/routes/destination={iata_id}", response_model=List[s.RouteFull])
+@app.get("/api/v2/routes/destination={iata_id}", response_model=List[RouteRead])
 def get_routes_by_destination(iata_id: str):
     with Session(engine) as db:
         routes = db                                         \
-            .query(m.Route)                                 \
-            .filter(m.Route.destination_id == iata_id)      \
+            .query(Route)                                 \
+            .filter(Route.destination_id == iata_id)      \
             .all()
 
         if not routes:
@@ -669,12 +666,12 @@ def get_routes_by_destination(iata_id: str):
         return routes
 
 
-@app.get("/api/v2/routes/duration={duration}", response_model=List[s.RouteFull])
+@app.get("/api/v2/routes/duration={duration}", response_model=List[RouteRead])
 def get_routes_by_duration(duration: int):
     with Session(engine) as db:
         routes = db                                   \
-            .query(m.Route)                         \
-            .filter(m.Route.duration == duration)   \
+            .query(Route)                         \
+            .filter(Route.duration == duration)   \
             .all()
 
         if not routes:
@@ -689,12 +686,12 @@ def get_routes_by_duration(duration: int):
 # --------------------  Update  ------------------
 
 
-@app.patch("/api/v2/routes/{route_id}", response_model=s.RouteFull)
-def update_route(route_id: int, route: s.RouteUpdate):
+@app.patch("/api/v2/routes/{route_id}", response_model=RouteRead)
+def update_route(route_id: int, route: RouteUpdate):
     with Session(engine) as db:
         db_route = db                               \
-            .query(m.Route)                         \
-            .filter(m.Route.id == route_id)         \
+            .query(Route)                         \
+            .filter(Route.id == route_id)         \
             .first()
 
         if not db_route:
@@ -721,8 +718,8 @@ def update_route(route_id: int, route: s.RouteUpdate):
 def delete_route(route_id: int):
     with Session(engine) as db:
         db_route = db                               \
-            .query(m.Route)                         \
-            .filter(m.Route.id == route_id)         \
+            .query(Route)                         \
+            .filter(Route.id == route_id)         \
             .first()
 
         if not db_route:
@@ -732,8 +729,8 @@ def delete_route(route_id: int):
             )
 
         affected_flights = db                           \
-            .query(m.Flight)                            \
-            .filter(m.Flight.route_id == route_id)      \
+            .query(Flight)                            \
+            .filter(Flight.route_id == route_id)      \
             .all()
 
         for flight in affected_flights:
