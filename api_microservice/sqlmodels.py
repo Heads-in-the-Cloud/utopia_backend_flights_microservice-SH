@@ -44,6 +44,7 @@ class AirplaneTypeBase(SQLModel):
 
 
 class AirplaneType(AirplaneTypeBase, table=True):
+    __tablename__ = "airplane_type"
     id: Optional[int] = Field(default=None, primary_key=True)
 
 
@@ -101,7 +102,7 @@ class AirportUpdate(SQLModel):
 class FlightBase(SQLModel):
     route_id: int = Field(foreign_key="route.id", nullable=False)
     airplane_id: int = Field(foreign_key="airplane.id", nullable=False)
-    departure_time: datetime = Field(nullable=False, default=datetime.utcnow())
+    departure_time: str = Field(nullable=False, default=str(datetime.utcnow()))
     reserved_seats: int = Field(nullable=False, default=0)
     seat_price: float = Field(nullable=False, default=0.00)
 
@@ -137,7 +138,7 @@ class FlightUpdate(SQLModel):
 class RouteBase(SQLModel):
     origin_id: str = Field(nullable=False, foreign_key="airport.iata_id")
     destination_id: str = Field(nullable=False, foreign_key="airport.iata_id")
-    duration: float = Field(nullable=False)
+    duration: Optional[float] = Field(nullable=False)
 
     flights: List[Flight] = Relationship(back_populates="route")
     # origin: Airport = Relationship(back_populates="route_origin")
