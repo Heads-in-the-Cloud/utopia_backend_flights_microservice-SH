@@ -3,14 +3,17 @@
 # ########################################        Restful Resources      ###############################################
 # ########################################                               ###############################################
 # ######################################################################################################################
+
 from flask import request
 from flask_restful import Resource, Api
 
 from schemas import *
 
+
 # ------------------------------------------------
-#                   Airports
+#                   Airport
 # ------------------------------------------------
+
 
 class AirportResource(Resource):
     def get(self, iata_id):
@@ -40,7 +43,7 @@ class AirportCreationResource(Resource):
 
 
 class AirportPatchResource(Resource):
-    def patch(self, iata_id):
+    def post(self, iata_id):
         airport = Airport.query.get_or_404(iata_id)
 
         if 'iata_id' in request.json:
@@ -61,7 +64,7 @@ class AirportPatchResource(Resource):
 
 
 class AirportDeleteResource(Resource):
-    def delete(self, iata_id):
+    def post(self, iata_id):
         airport = Airport.query.get_or_404(iata_id)
 
         db.session.delete(airport)
@@ -96,7 +99,7 @@ class AirplaneCreationResource(Resource):
 
 
 class AirplanePatchResource(Resource):
-    def patch(self, airplane_id):
+    def post(self, airplane_id):
         airplane = Airplane.query.get_or_404(airplane_id)
 
         if 'airplane_id' in request.json:
@@ -109,7 +112,7 @@ class AirplanePatchResource(Resource):
 
 
 class AirplaneDeleteResource(Resource):
-    def delete(self, airplane_id):
+    def post(self, airplane_id):
         airplane = Airplane.query.get_or_404(airplane_id)
 
         db.session.delete(airplane)
@@ -145,7 +148,7 @@ class AirplaneTypeCreationResource(Resource):
 
 
 class AirplaneTypePatchResource(Resource):
-    def patch(self, airplane_type_id):
+    def post(self, airplane_type_id):
         airplane_type = AirplaneType.query.get_or_404(airplane_type_id)
 
         if 'type_id' in request.json:
@@ -158,7 +161,7 @@ class AirplaneTypePatchResource(Resource):
 
 
 class AirplaneTypeDeleteResource(Resource):
-    def delete(self, airplane_type_id):
+    def post(self, airplane_type_id):
         airplane_type = Airplane.query.get_or_404(airplane_type_id)
 
         db.session.delete(airplane_type)
@@ -198,7 +201,7 @@ class FlightCreationResource(Resource):
 
 
 class FlightPatchResource(Resource):
-    def patch(self, flight_id):
+    def post(self, flight_id):
         flight = Flight.query.get_or_404(flight_id)
 
         if 'flight_id' in request.json:
@@ -219,7 +222,7 @@ class FlightPatchResource(Resource):
 
 
 class FlightDeleteResource(Resource):
-    def delete(self, flight_id):
+    def post(self, flight_id):
         flight = Flight.query.get_or_404(flight_id)
 
         db.session.delete(flight)
@@ -256,7 +259,7 @@ class RouteCreationResource(Resource):
 
 
 class RoutePatchResource(Resource):
-    def patch(self, route_id):
+    def post(self, route_id):
         route = Route.query.get_or_404(route_id)
 
         if 'route_id' in request.json:
@@ -273,7 +276,7 @@ class RoutePatchResource(Resource):
 
 
 class RouteDeleteResource(Resource):
-    def delete(self, route_id):
+    def post(self, route_id):
         route = Route.query.get_or_404(route_id)
 
         db.session.delete(route)
@@ -294,51 +297,51 @@ api = Api()
 #                   Airplane
 # ------------------------------------------------
 
-api.add_resource(AirplaneResource, '/api/airplane/<int:airplane_id>')
-api.add_resource(AirplaneListResource, '/api/airplane/all')
-api.add_resource(AirplaneCreationResource, '/api/airplane/create')
-api.add_resource(AirplanePatchResource, '/api/airplane/update/<int:airplane_id>')
-api.add_resource(AirplaneDeleteResource, '/api/airplane/delete/<int:airplane_id>')
+api.add_resource(AirplaneResource, '/api/v1/airplanes/<int:airplane_id>')
+api.add_resource(AirplaneListResource, '/api/v1/airplanes/')
+api.add_resource(AirplaneCreationResource, '/api/v1/airplanes/create/')
+api.add_resource(AirplanePatchResource, '/api/v1/airplanes/update/')
+api.add_resource(AirplaneDeleteResource, '/api/v1/airplanes/delete/')
 
 # ------------------------------------------------
 #                 Airplane Type
 # ------------------------------------------------
 
-api.add_resource(AirplaneTypeResource, '/api/airplane_type/<int:airplane_type_id>')
-api.add_resource(AirplaneTypeListResource, '/api/airplane_type/all')
-api.add_resource(AirplaneTypeCreationResource, '/api/airplane_type/create')
-api.add_resource(AirplaneTypePatchResource, '/api/airplane_type/update/<int:airplane_type_id>')
-api.add_resource(AirplaneTypeDeleteResource, '/api/airplane_type/delete/<int:airplane_type_id>')
+api.add_resource(AirplaneTypeResource, '/api/v1/airplane_types/<int:airplane_type_id>')
+api.add_resource(AirplaneTypeListResource, '/api/v1/airplane_types/')
+api.add_resource(AirplaneTypeCreationResource, '/api/v1/airplane_types/create/')
+api.add_resource(AirplaneTypePatchResource, '/api/v1/airplane_types/update/')
+api.add_resource(AirplaneTypeDeleteResource, '/api/v1/airplane_types/delete/')
 
 
 # ------------------------------------------------
 #                   Airports
 # ------------------------------------------------
 
-api.add_resource(AirportResource, '/api/airport/<iata_id>')
-api.add_resource(AirportListResource, '/api/airport/all')
-api.add_resource(AirportCreationResource, '/api/airport/create')
-api.add_resource(AirportPatchResource, '/api/airport/update/<iata_id>')
-api.add_resource(AirportDeleteResource, '/api/airport/delete/<iata_id>')
+api.add_resource(AirportResource, '/api/v1/airports/<iata_id>')
+api.add_resource(AirportListResource, '/api/v1/airports/')
+api.add_resource(AirportCreationResource, '/api/v1/airports/create/')
+api.add_resource(AirportPatchResource, '/api/v1/airports/update/')
+api.add_resource(AirportDeleteResource, '/api/v1/airports/delete/')
 
 
 # ------------------------------------------------
 #                      Flight
 # ------------------------------------------------
 
-api.add_resource(FlightResource, '/api/flight/<flight_id>')
-api.add_resource(FlightListResource, '/api/flight/all')
-api.add_resource(FlightCreationResource, '/api/flight/create')
-api.add_resource(FlightPatchResource, '/api/flight/update/<flight_id>')
-api.add_resource(FlightDeleteResource, '/api/flight/delete/<flight_id>')
+api.add_resource(FlightResource, '/api/v1/flights/<int:flight_id>')
+api.add_resource(FlightListResource, '/api/v1/flights/all/')
+api.add_resource(FlightCreationResource, '/api/v1/flights/create/')
+api.add_resource(FlightPatchResource, '/api/v1/flights/update/')
+api.add_resource(FlightDeleteResource, '/api/v1/flights/delete/')
 
 
 # ------------------------------------------------
 #                      Route
 # ------------------------------------------------
 
-api.add_resource(RouteResource, '/api/route/<route_id>')
-api.add_resource(RouteListResource, '/api/route/all')
-api.add_resource(RouteCreationResource, '/api/route/create')
-api.add_resource(RoutePatchResource, '/api/route/update/<route_id>')
-api.add_resource(RouteDeleteResource, '/api/route/delete/<route_id>')
+api.add_resource(RouteResource, '/api/v1/routes/<int:route_id>')
+api.add_resource(RouteListResource, '/api/v1/routes/')
+api.add_resource(RouteCreationResource, '/api/v1/routes/create/')
+api.add_resource(RoutePatchResource, '/api/v1/routes/update/')
+api.add_resource(RouteDeleteResource, '/api/v1/routes/delete/')

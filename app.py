@@ -11,8 +11,6 @@ from config import Config
 from flask import Flask
 from flask_migrate import Migrate
 
-from flask_jwt_extended import jwt_required
-
 app = Flask(__name__)
 app.config.from_object(Config)
 
@@ -32,6 +30,11 @@ api.init_app(app)
 migrate = Migrate(db, app)
 
 
+@app.route('/')
+@app.route('/index')
+def proof_of_life():
+    return "<p> Flights microservice, reporting for duty. <p>"
+
 # ######################################################################################################################
 # ########################################                               ###############################################
 # ########################################         Make Runnable         ###############################################
@@ -40,4 +43,4 @@ migrate = Migrate(db, app)
 
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, host="0.0.0.0")
